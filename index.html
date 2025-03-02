@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuronGrow - AI-Powered Mind Mapping</title>
+    <style>
+        :root {
+            --bg-light: #f5f5f5;
+            --bg-dark: #1a1a1a;
+            --container-light: white;
+            --container-dark: #2d2d2d;
+            --text-light: #333;
+            --text-dark: #fff;
+            --node-light: #e0f7fa;
+            --node-dark: #3a4f52;
+            --node-main-light: #b2ebf2;
+            --node-main-dark: #4a6f72;
+            --border-light: #4dd0e1;
+            --border-dark: #4dd0e1;
+            --connection-light: #9e9e9e;
+            --connection-dark: #666;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-theme {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .mind-map-container {
+            background: var(--container-light);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 800px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .mind-map-container.dark-theme {
+            background: var(--container-dark);
+            box-shadow: 0 2px 5px rgba(255,255,255,0.1);
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        #topicInput {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: var(--container-light);
+            color: var(--text-light);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #topicInput.dark-theme {
+            background-color: var(--container-dark);
+            color: var(--text-dark);
+            border-color: #555;
+        }
+
+        .mind-map {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .node {
+            position: absolute;
+            background: var(--node-light);
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid var(--border-light);
+            color: var(--text-light);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .node.dark-theme {
+            background: var(--node-dark);
+            color: var(--text-dark);
+            border-color: var(--border-dark);
+        }
+
+        .node.main {
+            background: var(--node-main-light);
+            font-weight: bold;
+        }
+
+        .node.main.dark-theme {
+            background: var(--node-main-dark);
+        }
+
+        .node:hover {
+            background: var(--node-main-light);
+        }
+
+        .node.dark-theme:hover {
+            background: var(--node-main-dark);
+        }
+
+        .connection {
+            position: absolute;
+            border-top: 2px solid var(--connection-light);
+            transform-origin: 0 0;
+            transition: border-color 0.3s;
+        }
+
+        .connection.dark-theme {
+            border-color: var(--connection-dark);
+        }
+
+        .instruction {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--text-light);
+            transition: color 0.3s;
+        }
+
+        .instruction.dark-theme {
+            color: var(--text-dark);
+        }
+
+        .loading {
+            text-align: center;
+            margin: 20px;
+            color: var(--text-light);
+            transition: color 0.3s;
+        }
+
+        .loading.dark-theme {
+            color: var(--text-dark);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: var(--container-light);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        button.dark-theme {
+            background-color: var(--container-dark);
+            color: var(--text-dark);
+            border-color: #555;
+        }
+
+        button:hover {
+            background-color: var(--node-main-light);
+        }
+
+        button.dark-theme:hover {
+            background-color: var(--node-main-dark);
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #4dd0e1;">NeuronGrow - AI-Powered Mind Mapping</h1>
+    <div class="search-bar">
+        <input type="text" id="topicInput" placeholder="Enter any topic like 'Technology'" />
+    </div>
+    <div class="mind-map-container">
+        <div class="instruction">
+            (Click on any node to generate AI-powered subtopics.)
+        </div>
+        <div class="mind-map" id="mindMap"></div>
+        <div class="loading" id="loading" style="display: none;">Generating subtopics...</div>
+        <div class="controls">
+            <button id="toggleTheme">Toggle Dark Theme</button>
+            <button id="saveHistory">Save History</button>
+            <button id="loadHistory">Load History</button>
+            <button id="exportPDF">Export as PDF</button>
+            <button id="exportImage">Export as Image</button>
+            <button id="undo">Undo</button>
+        </div>
+    </div>
+
+    <!-- Libraries for exporting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        class MindMap {
+            constructor() {
+                this.nodes = [];
+                this.container = document.getElementById('mindMap');
+                this.topicInput = document.getElementById('topicInput');
+                this.loading = document.getElementById('loading');
+                this.history = []; // Stack for undo
+                this.currentState = null;
+
+                // Event listeners
+                this.topicInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.generateMindMap();
+                });
+                document.getElementById('toggleTheme').addEventListener('click', () => this.toggleTheme());
+                document.getElementById('saveHistory').addEventListener('click', () => this.saveHistory());
+                document.getElementById('loadHistory').addEventListener('click', () => this.loadHistory());
+                document.getElementById('exportPDF').addEventListener('click', () => this.exportPDF());
+                document.getElementById('exportImage').addEventListener('click', () => this.exportImage());
+                document.getElementById('undo').addEventListener('click', () => this.undo());
+
+                // Load saved history on startup
+                this.loadHistory();
+            }
+
+            toggleTheme() {
+                document.body.classList.toggle('dark-theme');
+                document.querySelector('.mind-map-container').classList.toggle('dark-theme');
+                document.querySelectorAll('.node, .connection, #topicInput, .instruction, .loading, button')
+                    .forEach(element => element.classList.toggle('dark-theme'));
+            }
+
+            async generateMindMap() {
+                this.container.innerHTML = '';
+                this.nodes = [];
+                const topic = this.topicInput.value || 'Technology'; // Default to a generic topic
+                this.addNode(topic, 'main', 0, 0);
+
+                // Generic initial structure for any topic
+                this.addBranch('Aspects', 200, 0);
+                this.addBranch('Benefits', 200, 200);
+                this.addBranch('Challenges', 200, 400);
+                this.addBranch('Definition', -200, 0);
+                this.addBranch('Applications', -200, 200);
+                this.addBranch('Future', -200, 400);
+
+                // Add initial sub-nodes (generic example data)
+                this.addSubNode('Aspects', ['Components', 'Features']);
+                this.addSubNode('Benefits', ['Advantages', 'Opportunities']);
+                this.addSubNode('Challenges', ['Obstacles', 'Risks']);
+                this.addSubNode('Applications', ['Uses', 'Implementations']);
+                this.addSubNode('Future', ['Trends', 'Innovations']);
+
+                this.saveState();
+            }
+
+            addNode(text, type = '', x, y) {
+                const node = document.createElement('div');
+                node.className = `node ${type}`;
+                node.textContent = text;
+                node.style.left = `${x + 250}px`; // Center offset
+                node.style.top = `${y + 100}px`; // Center offset
+                node.addEventListener('click', () => this.handleNodeClick(text));
+                this.container.appendChild(node);
+                this.nodes.push({ text, x, y, children: [], parent: null });
+                return node;
+            }
+
+            addBranch(text, x, y) {
+                const parent = this.nodes.find(n => n.text === this.topicInput.value || 'Technology');
+                const node = this.addNode(text, '', x, y);
+                this.drawConnection(parent, { x, y });
+                const newNode = this.nodes[this.nodes.length - 1];
+                newNode.parent = parent;
+                parent.children.push(newNode);
+            }
+
+            addSubNode(parentText, subNodes) {
+                const parent = this.nodes.find(n => n.text === parentText);
+                if (!parent) return;
+
+                const angleStep = (2 * Math.PI) / subNodes.length;
+                subNodes.forEach((subNode, index) => {
+                    const radius = 150;
+                    const angle = index * angleStep;
+                    const x = parent.x + radius * Math.cos(angle);
+                    const y = parent.y + radius * Math.sin(angle);
+                    const node = this.addNode(subNode, '', x, y);
+                    this.drawConnection(parent, { x, y });
+                    const newNode = this.nodes[this.nodes.length - 1];
+                    newNode.parent = parent;
+                    parent.children.push(newNode);
+                });
+            }
+
+            drawConnection(parent, childPos) {
+                const connection = document.createElement('div');
+                connection.className = 'connection';
+                const parentRect = this.container.querySelector(`.node:contains(${parent.text})`).getBoundingClientRect();
+                const parentX = parent.x + 250 + parentRect.width / 2;
+                const parentY = parent.y + 100 + parentRect.height / 2;
+                const childX = childPos.x + 250;
+                const childY = childPos.y + 100;
+
+                const dx = childX - parentX;
+                const dy = childY - parentY;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                connection.style.width = `${length}px`;
+                connection.style.left = `${parentX}px`;
+                connection.style.top = `${parentY}px`;
+                connection.style.transform = `rotate(${angle}deg)`;
+                this.container.appendChild(connection);
+            }
+
+            async handleNodeClick(text) {
+                const node = this.nodes.find(n => n.text === text);
+                if (node) {
+                    this.loading.style.display = 'block'; // Show loading indicator
+                    try {
+                        const subTopics = await this.generateAISubTopics(text);
+                        this.addSubNode(text, subTopics);
+                        this.saveState();
+                    } catch (error) {
+                        console.error('Error generating subtopics:', error);
+                        alert('Failed to generate subtopics. Please try again.');
+                    } finally {
+                        this.loading.style.display = 'none'; // Hide loading indicator
+                    }
+                }
+            }
+
+            async generateAISubTopics(text) {
+                // Call the backend API for secure AI-generated subtopics
+                try {
+                    const response = await fetch('http://localhost:3000/api/subtopics', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ topic: text })
+                    });
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    return data.subtopics || ['Subtopic 1', 'Subtopic 2'];
+                } catch (error) {
+                    console.error('Error fetching subtopics:', error);
+                    return ['Error generating subtopics', 'Try again'];
+                }
+            }
+
+            saveState() {
+                const state = {
+                    nodes: this.nodes.map(n => ({ text: n.text, x: n.x, y: n.y, children: n.children.map(c => c.text), parent: n.parent ? n.parent.text : null })),
+                    topic: this.topicInput.value || 'Technology'
+                };
+                this.history.push(JSON.stringify(state));
+                if (this.history.length > 20) this.history.shift(); // Limit history to last 20 states
+            }
+
+            undo() {
+                if (this.history.length <= 1) return; // No undo if only initial state
+                this.history.pop(); // Remove current state
+                const previousState = JSON.parse(this.history[this.history.length - 1]);
+                this.nodes = [];
+                this.container.innerHTML = '';
+                this.topicInput.value = previousState.topic;
+                previousState.nodes.forEach(node => {
+                    this.addNode(node.text, node.parent ? '' : 'main', node.x, node.y);
+                    if (node.parent) {
+                        const parent = this.nodes.find(n => n.text === node.parent);
+                        if (parent) parent.children.push(this.nodes[this.nodes.length - 1]);
+                    }
+                    node.children.forEach(childText => this.addSubNode(node.text, [childText]));
+                });
+            }
+
+            saveHistory() {
+                const historyData = {
+                    topic: this.topicInput.value || 'Technology',
+                    nodes: this.nodes.map(n => ({ text: n.text, x: n.x, y: n.y, children: n.children.map(c => c.text), parent: n.parent ? n.parent.text : null }))
+                };
+                localStorage.setItem('neuronGrowHistory', JSON.stringify(historyData));
+                alert('Mind map history saved!');
+            }
+
+            loadHistory() {
+                const savedHistory = localStorage.getItem('neuronGrowHistory');
+                if (savedHistory) {
+                    const historyData = JSON.parse(savedHistory);
+                    this.topicInput.value = historyData.topic;
+                    this.container.innerHTML = '';
+                    this.nodes = [];
+                    historyData.nodes.forEach(node => {
+                        this.addNode(node.text, node.parent ? '' : 'main', node.x, node.y);
+                        if (node.parent) {
+                            const parent = this.nodes.find(n => n.text === node.parent);
+                            if (parent) parent.children.push(this.nodes[this.nodes.length - 1]);
+                        }
+                        node.children.forEach(childText => this.addSubNode(node.text, [childText]));
+                    });
+                    alert('Mind map history loaded!');
+                }
+            }
+
+            async exportPDF() {
+                const mindMap = this.container.querySelector('.mind-map');
+                const pdf = new jsPDF();
+                await html2canvas(mindMap, { scale: 2 }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const width = pdf.internal.pageSize.getWidth();
+                    const height = (canvas.height * width) / canvas.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+                    pdf.save('neuronGrow-mindmap.pdf');
+                });
+            }
+
+            async exportImage() {
+                const mindMap = this.container.querySelector('.mind-map');
+                await html2canvas(mindMap, { scale: 2 }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'neuronGrow-mindmap.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new MindMap();
+        });
+    </script>
+</body>
+</html>
